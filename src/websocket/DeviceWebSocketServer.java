@@ -78,9 +78,9 @@ public class DeviceWebSocketServer {
                 message.setDateSent(new LocalDateTime());
                 message.setIdSession(session.getId());
                 chatHandler.putMessageOnChat(message);
-                for (Message messageShow : get) {
-                    logger.log(Level.INFO, );
-                }
+//                for (Message messageShow : get) {
+//                    logger.log(Level.INFO, );
+//                }
             }
         }
     }
