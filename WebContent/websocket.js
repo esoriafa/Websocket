@@ -1,23 +1,24 @@
 
-
 window.onload = init;
 try {
     var socket = new WebSocket("ws://localhost:8080/WebsocketProject/actions");
 } catch (e) {
     console.error('Sorry, something went wrong');
 }
-socket.onopen = function(){
-    socket.send(JSON.stringify({action:"sendChatMessage",
-                                text:"Hi, connection established"}));
+socket.onopen = function() {
+    socket.send(JSON.stringify({
+        action : "sendChatMessage",
+        text : "Hi, connection established"
+    }));
     console.log("Connection Opened");
 }
-socket.onclose = function(){
+socket.onclose = function() {
     console.log("Connection Closed");
 }
-socket.onerror = function(evt){
+socket.onerror = function(evt) {
     console.log("The following error occurred: " + evt.data);
 }
-socket.onmessage = function(evt){
+socket.onmessage = function(evt) {
     console.log("The following data was received:" + evt.data);
 }
 socket.onmessage = onMessage;
@@ -34,19 +35,26 @@ function onMessage(event) {
         var node = document.getElementById(device.id);
         var statusText = node.children[2];
         if (device.status === "On") {
-            statusText.innerHTML = "Status: " + device.status + " (<a href=\"#\" OnClick=toggleDevice(" + device.id + ")>Turn off</a>)";
+            statusText.innerHTML = "Status: " + device.status
+                    + " (<a href=\"#\" OnClick=toggleDevice(" + device.id
+                    + ")>Turn off</a>)";
         } else if (device.status === "Off") {
-            statusText.innerHTML = "Status: " + device.status + " (<a href=\"#\" OnClick=toggleDevice(" + device.id + ")>Turn on</a>)";
+            statusText.innerHTML = "Status: " + device.status
+                    + " (<a href=\"#\" OnClick=toggleDevice(" + device.id
+                    + ")>Turn on</a>)";
         }
+    }
+    if (device.action === "receiveMessageChat") {
+        
     }
 }
 
 function addDevice(name, type, description) {
     var DeviceAction = {
-        action: "add",
-        name: name,
-        type: type,
-        description: description
+        action : "add",
+        name : name,
+        type : type,
+        description : description
     };
     socket.send(JSON.stringify(DeviceAction));
 }
@@ -54,8 +62,8 @@ function addDevice(name, type, description) {
 function removeDevice(element) {
     var id = element;
     var DeviceAction = {
-        action: "remove",
-        id: id
+        action : "remove",
+        id : id
     };
     socket.send(JSON.stringify(DeviceAction));
 }
@@ -63,15 +71,15 @@ function removeDevice(element) {
 function toggleDevice(element) {
     var id = element;
     var DeviceAction = {
-        action: "toggle",
-        id: id
+        action : "toggle",
+        id : id
     };
     socket.send(JSON.stringify(DeviceAction));
 }
 
 function printDeviceElement(device) {
     var content = document.getElementById("content");
-    
+
     var deviceDiv = document.createElement("div");
     deviceDiv.setAttribute("id", device.id);
     deviceDiv.setAttribute("class", "device " + device.type);
@@ -88,9 +96,13 @@ function printDeviceElement(device) {
 
     var deviceStatus = document.createElement("span");
     if (device.status === "On") {
-        deviceStatus.innerHTML = "<b>Status:</b> " + device.status + " (<a href=\"#\" OnClick=toggleDevice(" + device.id + ")>Turn off</a>)";
+        deviceStatus.innerHTML = "<b>Status:</b> " + device.status
+                + " (<a href=\"#\" OnClick=toggleDevice(" + device.id
+                + ")>Turn off</a>)";
     } else if (device.status === "Off") {
-        deviceStatus.innerHTML = "<b>Status:</b> " + device.status + " (<a href=\"#\" OnClick=toggleDevice(" + device.id + ")>Turn on</a>)";
+        deviceStatus.innerHTML = "<b>Status:</b> " + device.status
+                + " (<a href=\"#\" OnClick=toggleDevice(" + device.id
+                + ")>Turn on</a>)";
         //deviceDiv.setAttribute("class", "device off");
     }
     deviceDiv.appendChild(deviceStatus);
@@ -101,7 +113,8 @@ function printDeviceElement(device) {
 
     var removeDevice = document.createElement("span");
     removeDevice.setAttribute("class", "removeDevice");
-    removeDevice.innerHTML = "<a href=\"#\" OnClick=removeDevice(" + device.id + ")>Remove device</a>";
+    removeDevice.innerHTML = "<a href=\"#\" OnClick=removeDevice(" + device.id
+            + ")>Remove device</a>";
     deviceDiv.appendChild(removeDevice);
 }
 

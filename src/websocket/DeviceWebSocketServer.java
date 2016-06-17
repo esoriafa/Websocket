@@ -1,14 +1,11 @@
 package websocket;
 
-import java.io.StringReader;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -17,9 +14,11 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.joda.time.LocalDateTime;
+import org.json.JSONObject;
 
 import model.Device;
 import model.Message;
+import utils.Action;
 
 @ApplicationScoped
 @ServerEndpoint("/actions")
@@ -36,12 +35,14 @@ public class DeviceWebSocketServer {
     public void open(Session session) {
         logger.log(Level.INFO, "opening Session");
         sessionHandler.addSession(session);
+        logger.log(Level.INFO, "Session opened");
     }
 
     @OnClose
     public void close(Session session) {
         logger.log(Level.INFO, "Closing Session");
         sessionHandler.removeSession(session);
+        logger.log(Level.INFO, "Session Closed ");
     }
 
     @OnError
@@ -53,35 +54,38 @@ public class DeviceWebSocketServer {
     @OnMessage
     public void handleMessage(String messageJSON, Session session) {
 
-        try (JsonReader reader = Json.createReader(new StringReader(messageJSON))) {
-            JsonObject jsonMessage = reader.readObject();
-            logger.log(Level.INFO, jsonMessage.toString());
+        JSONObject jsonMessage = new JSONObject(messageJSON);
+        logger.log(Level.INFO, jsonMessage.toString());
 
-            if ("add".equals(jsonMessage.getString("action"))) {
-                Device device = new Device();
-                device.setName(jsonMessage.getString("name"));
-                device.setDescription(jsonMessage.getString("description"));
-                device.setType(jsonMessage.getString("type"));
-                device.setStatus("Off");
-                sessionHandler.addDevice(device);
-            } else if ("remove".equals(jsonMessage.getString("action"))) {
-                int id = jsonMessage.getInt("id");
-                sessionHandler.removeDevice(id);
-            } else if ("toggle".equals(jsonMessage.getString("action"))) {
-                int id = jsonMessage.getInt("id");
-                sessionHandler.toggleDevice(id);
+        if (equalAction(Action.ADD, jsonMessage)) {
+            Device device = new Device();
+            device.setName(jsonMessage.getString("name"));
+            device.setDescription(jsonMessage.getString("description"));
+            device.setType(jsonMessage.getString("type"));
+            device.setStatus("Off");
+            sessionHandler.addDevice(device);
+        } else if (equalAction(Action.REMOVE, jsonMessage)) {
+            int id = jsonMessage.getInt("id");
+            sessionHandler.removeDevice(id);
+        } else if (equalAction(Action.TOGGLE, jsonMessage)) {
+            int id = jsonMessage.getInt("id");
+            sessionHandler.toggleDevice(id);
 
-            } else if ("sendChatMessage".equals(jsonMessage.getString("action"))) {
-                String messageText = jsonMessage.getString("message");
-                Message message = new Message();
-                message.setText(jsonMessage.getString("text"));
-                message.setDateSent(new LocalDateTime());
-                message.setIdSession(session.getId());
-                chatHandler.putMessageOnChat(message);
-                for (Message messageShow : get) {
-                    logger.log(Level.INFO, );
-                }
+        } else if (equalAction("sendChatMessage", jsonMessage)) {
+            Message message = new Message();
+            message.setText(jsonMessage.getString("text"));
+            message.setDateSent(new LocalDateTime());
+            message.setIdSession(session.getId());
+            chatHandler.putMessageOnChat(message);
+            Set<Message> allMessagesChat = chatHandler.getAllMessages();
+            for (Message messageShow : allMessagesChat) {
+                logger.log(Level.INFO, messageShow.getText());
             }
+            sessionHandler.broadcastChatMessage(message);
         }
+    }
+
+    private boolean equalAction(String action, JSONObject jsonMessage) {
+        return action.equals(jsonMessage.getString("action"));
     }
 }

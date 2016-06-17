@@ -11,13 +11,17 @@ import javax.json.JsonObject;
 import javax.json.spi.JsonProvider;
 import javax.websocket.Session;
 
+import jsonobjects.ActionJsonObject;
 import model.Device;
 import model.IDevice;
+import model.Message;
 import model.nullDevice;
+import utils.Action;
 
 @ApplicationScoped
 public class DeviceSessionHandler {
 
+    Logger logger = Logger.getLogger(DeviceSessionHandler.class.getName());
     private int deviceId = 1;
     private final Set<Session> sessions = new HashSet<>();
     private final Set<Device> devices = new HashSet<>();
@@ -29,7 +33,7 @@ public class DeviceSessionHandler {
 
     private void sendListDevicesToClient(Session session) {
         for (Device device : devices) {
-            JsonObject addMessage = createAddMessage(device);
+            JsonObject addMessage = createActionMessage(Action.ADD, device);
             sendToSession(session, addMessage);
         }
 
@@ -48,7 +52,7 @@ public class DeviceSessionHandler {
         devices.add(device);
         deviceId++;
 
-        JsonObject addMessage = createAddMessage(device);
+        JsonObject addMessage = createActionMessage(Action.ADD, device);
         sendToAllConnectedSessions(addMessage);
     }
 
@@ -57,7 +61,7 @@ public class DeviceSessionHandler {
         if (device != null) {
             devices.remove(device);
             JsonProvider provider = JsonProvider.provider();
-            JsonObject removeMessage = provider.createObjectBuilder().add("action", "remove").add("id", id).build();
+            JsonObject removeMessage = createActionMessage(Action.REMOVE, device);
 
             sendToAllConnectedSessions(removeMessage);
         }
@@ -72,7 +76,7 @@ public class DeviceSessionHandler {
             } else {
                 device.setStatus("On");
             }
-            JsonObject updateDevMessage = provider.createObjectBuilder().add("action", "toggle").add("id", device.getId()).add("status", device.getStatus()).build();
+            JsonObject updateDevMessage = createActionMessage(Action.TOGGLE, device);
             sendToAllConnectedSessions(updateDevMessage);
         }
     }
@@ -90,11 +94,10 @@ public class DeviceSessionHandler {
         return deviceFound;
     }
 
-    private JsonObject createAddMessage(Device device) {
-        JsonProvider provider = JsonProvider.provider();
-        JsonObject addMessage = provider.createObjectBuilder().add("action", "add").add("id", device.getId()).add("name", device.getName()).add("type", device.getType())
-                .add("status", device.getStatus()).add("description", device.getDescription()).build();
-        return addMessage;
+    private JsonObject createActionMessage(String action, Device device) {
+        ActionJsonObject addMessage = new ActionJsonObject(action, device.getId(), device.getName(), device.getType(), device.getStatus(),
+                device.getDescription());
+        return addMessage.getActionJsonObject();
 
     }
 
@@ -110,7 +113,11 @@ public class DeviceSessionHandler {
             session.getBasicRemote().sendText(message.toString());
         } catch (IOException IOex) {
             sessions.remove(session);
-            Logger.getLogger(DeviceSessionHandler.class.getName()).log(Level.SEVERE, null, IOex);
+            logger.log(Level.SEVERE, null, IOex);
         }
+    }
+
+    public void broadcastChatMessage(Message message) {
+        logger.log(Level.SEVERE, null, message.getText());
     }
 }
